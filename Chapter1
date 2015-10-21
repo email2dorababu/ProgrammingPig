@@ -61,6 +61,14 @@ One reducer will get 10 or more times the data than other reducers.
 Pig has join and order  by operators that will handle these skew and rebalances reducers in some cases.
 
 but this rebalancing might took pig team months to write and rewriting the logic if it is in MR. i.e writing MR programs is time consuming.
+in MR, the frame work has no opportunity to optimize or check users code.
+PIG can analyze the pig latin , understand the data flow that the user is describing.
+means it can do early error checking (like user is trying to add string to integer) and
+optimizations( can these two grouping operations be combined?
+
+Pig latin is much lower cost to write and maintain than java code for MR.
+But MR has the flexibility to use users own data types and serialization framewors. but on the downside, system cannot check the users code for errors before and during runtime.
+
 
 
 
