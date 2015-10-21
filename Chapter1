@@ -69,7 +69,21 @@ optimizations( can these two grouping operations be combined?
 Pig latin is much lower cost to write and maintain than java code for MR.
 But MR has the flexibility to use users own data types and serialization framewors. but on the downside, system cannot check the users code for errors before and during runtime.
 
+For less common algorithms or extreamly performance sensitive ones, MR is still right choice.
+--------------------------------------------
+PG 7
 
+What is PIG is useful for?
+
+Pig latin use cases tend to fall into 3 categories: 
+1. Traditional ETL data pipleline
+2. research on rawdata
+3. Iterative processing.
+
+Largest usecase is data pipeline.
+Common esample is - web companies bring in logs from their web servers, cleansing the data and preprocessing before loading into data warehouse.
+in this case data is loaded onto the grid, pig is used to clean records from BOTS and records with corrupt data.
+It also used to join the web events data against user databases so that user cookies can be connected with known user information.
 
 
 
