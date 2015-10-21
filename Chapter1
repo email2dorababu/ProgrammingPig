@@ -48,6 +48,19 @@ Pig does not require data to be loaded into tables first. it can operate on data
 SQL is like universal language, means the barrier to adoption is very low.
 But the goal is to make Pig latin as the native language of parallel data-processing systems such as hadoop. 
 It may take some learning. but it allows users to utilize the power of hadoop much more fully.
+-------------------------------------------
+PG 5:
+How Pig differs from MR?
+MR provides the necessary parallel procesing , then why pig?
+pig latin provides all of the standard data processing operations: like join,filter, group by, order by union etc. 
+MR provides, group by operation directly(shuffle and reduce phase is group by) and order by operation inderectly similar to how it implements grouping. filter and projection can be implemented in the map phase. 
+But other operators, like join are not provided and must be implemented by the user.
+In addition pig provides some complex, non trivial implementations of the standard data operations - for e.g no of records per key in a data set is rarely evenly distributed and the data sent to the reducers is ofter skewed.
+One reducer will get 10 or more times the data than other reducers.
+
+Pig has join and order  by operators that will handle these skew and rebalances reducers in some cases.
+
+but this rebalancing might took pig team months to write and rewriting the logic if it is in MR. i.e writing MR programs is time consuming.
 
 
 
