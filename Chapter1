@@ -19,6 +19,12 @@ Many Maps are started at once so ,let input can be GBs or TBs, given enough mach
 Every record for a given key will go to the same reducer.
 ----------------------------------------------------
 PG-4 :
+Pig Latin, a Parallel Dataflow Language:
+Pig Latin is a dataflow language.
+Data flow means, users are allowed to describe how data from one or more inputs should be read, processed and then stored to one or more outputs in parallel.
+data flows can be simple - simple linear flows like word count.
+Complex workflows are - multiple inputs are joined, data is split into multiple streams that are processed by different operators.
+Pig Latin is a DAG - directed acyclic graph - where the edges are data flows and the nodes are operators that process data.
 
 
 
