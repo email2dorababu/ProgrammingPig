@@ -30,6 +30,42 @@ For many procedural and OOP languages - main flow is the control flow, and data 
 For Pig Latin, Data flow is the focus.
 
 {we see how to integrate the data flow of pig latin script with the control flow, in chapter 9}
+Comparing SQL and data flow languages:
+SQL focus is to allow users to form queries.
+It allows what questions they want answered, but now how they want it answered.
+In Pig Latin - users describes exactly how to process input data.
+
+SQL is oriented around answering one question. 
+when user want sevaral data operations together, they must either write separate queres and  store the intermediate data into temp tables or 
+write subqueries (confusing and difficult). 
+Using subqueries creates - inside out design , the first step in the data pipeline is the innermost query.
+
+Pig - is designed with a long series of data operations in mind. 
+so no need to write the data pipeline in inside out subqueries and temp tables.
+
+sql can operate only when data is in tables.
+Pig does not require data to be loaded into tables first. it can operate on data as soon as it is copied into HDFS.
+SQL is like universal language, means the barrier to adoption is very low.
+But the goal is to make Pig latin as the native language of parallel data-processing systems such as hadoop. 
+It may take some learning. but it allows users to utilize the power of hadoop much more fully.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
