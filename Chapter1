@@ -7,3 +7,32 @@ use it for themselves,
 contribute to it, and—
 under the terms of the Apache License: 
 —use it in their products and change it as they see fit.
+---------------------------------------
+Pig On Hadoop:
+Pig runs on Hadoop, means it makes use of both HDFS and MR.
+HDFS:
+it reads data from HDFS, stores intermediate data in HDFS and writes final results on HDFS.
+It can also read input from and write output to sources other than HDFS.
+MR:
+In the map phase, the application has the opportunity to operate on each record in the input sepaately.
+Many Maps are started at once so ,let input can be GBs or TBs, given enough machines, the map phase can usually be completed in under one minute.
+Every record for a given key will go to the same reducer.
+----------------------------------------------------
+PG-4 :
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
