@@ -26,7 +26,10 @@ data flows can be simple - simple linear flows like word count.
 Complex workflows are - multiple inputs are joined, data is split into multiple streams that are processed by different operators.
 Pig Latin is a DAG - directed acyclic graph - where the edges are data flows and the nodes are operators that process data.
 
+For many procedural and OOP languages - main flow is the control flow, and data flow is a side effect of the program.
+For Pig Latin, Data flow is the focus.
 
+{we see how to integrate the data flow of pig latin script with the control flow, in chapter 9}
 
 
 
