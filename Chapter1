@@ -1,1 +1,9 @@
 PG - 1
+Pig provides an engine for executing data flows in parallel on Hadoop.
+These data flows are expressed in a language called - pig Latin.
+Pig is an Apache open source project: This means users are 
+free to download it as source or binary, 
+use it for themselves, 
+contribute to it, and—
+under the terms of the Apache License: 
+—use it in their products and change it as they see fit.
