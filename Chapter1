@@ -84,6 +84,29 @@ Largest usecase is data pipeline.
 Common esample is - web companies bring in logs from their web servers, cleansing the data and preprocessing before loading into data warehouse.
 in this case data is loaded onto the grid, pig is used to clean records from BOTS and records with corrupt data.
 It also used to join the web events data against user databases so that user cookies can be connected with known user information.
+PG-8
+Another ex of data pipeline is using pig offline to build behavior prediction models.
+Pig is used to scan all user interactions with the webside and split the users into segments. then for each segment a mathematical model is produced..
+these models predicts how members of that segment will respond to types of advertisements or news articles.
+This way the website can show ads that are more likely to get clicked on or offer news that make the users to keep coming back to the site.
+
+Traditionally for adhoc queries SQL is used, this make it easy to quickly form a question for the data to answer.
+However for research on raw data, pig latin is preferred. this is because pig can operate even when there is no schema or schema is unknown, incomplete or inconsistent.
+Pig can easily manange nested data- hence we can work on the data before it is cleansed and loaded into DW.
+Python or perl scripting is used to process large datasets.. people who use these will often prefer the data flow paradigm of pig over the declarative query paradigm of SQL.
+---------------
+NOTE: PIG is like MR , is oriented around the batch processing of data.
+if you need to process GB or TBs of data, pig is a good choice.
+But it expects to read all the records of a file and write all of its output sequentially.
+For writing single of small group of records, or to look up diff records in random order, PIG (like MR) is not a good choice..
+You need to use any NoSQL databases for these use cases.
+--------------------------------------------------------------------------------------
+
+PIG PHILOSYPHY:
+------------------------
+To BEST contribute to Pig you should be aware of what is accepted and what is not.
+The Pig team produced a Pig project's Philosophy- summariazed as below.
+1) PIG eat anything: - Pig can operate on data whether it has metadata or not. 
 
 
 
