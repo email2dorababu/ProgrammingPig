@@ -39,5 +39,43 @@ NN is the manager of HDFS and JT coordinates MR jobs.
 These locations can be found in hadoop-site.xml(Hadoop 0.18 and earlier)
 or they are in 3 separate files(in Hadoop 0.20 and later) core-site.xml,hdfs-site.xml and Mapred-site.xml.
 
+if these files are present in all nodes it is fine.. if they are not present then copy the files from nodes to a location on 
+your gateway machine. this guarantees that you get the proper addresses plus any site-specific settings.
+Once you have located,copied or created files, you will need to tell pig the directory they are in by setting PIG_CASSPATH, env
+variable to that DIRECTORY, not indivudual files.\
+
+Amazon EMR offer - rather than renting EC2 and other cloud services, EMR allows users to rent virtual Hadoop clusters.
+These clusters read data from and write data to Amazon Simple storage service (S3). EMR users can access their rented hadoop 
+cluster via their browser,SSH or a web services API.
+
+CHeck the below tutorial on EMR and access the url for further details-http://aws.amazon.com/elasticmapreduce/
+http://s3.amazonaws.com/awsVideos/AmazonElasticMapReduce/ElasticMapReduce-PigTutorial.html 
+-----------------------------------------------------------
+Command line options:  many are disscussed later.
+See full list by   pig -h
+pig -e or -execute to execute single command  e.g pig -e fs -ls
+pig -h or -help - list the available command line options
+pig -h properties - list all the properties that pig will use if they are SET BY USER
+pig -P or -propertyFile - (capital -P) -specify a property file that Pig should read.
+pig -version - prints the version of pig.
+
+
+Hadoop has no of Java properties it uses to determine its behavior.
+In Pig 0.8 and later, these can be passed to PIG and then PIG will pass them on to Hadoop when it invokes Hadoop.
+in earlier versions these properties had to be hadoop-site.xml so that hadoop client would pic them up.
+
+properties can be passed on command line using -D. e.g Pig -D exectype=local.
+you can also place these in conf/pig.properties file of your pig distribution
+or finally use a separate properties file by using -P.
+Command line takes precedence over properties file if you use both of them.
+------------------------------
+PG -18
+Return Codes:  to communicate success of failure.
+0-success, 1-retriable failure,2-failure,3-partial failure,4-illegal args passed to pig,5-IOexception(usually by UDF)
+,6-PigException(a python UDF raised an exception), 7- parseException,8- throwable(an unexpected exception)
+-----------------------------------
+
+
+
 
 
