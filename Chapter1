@@ -120,10 +120,13 @@ User can easily turn off this optimizer to prevent it from making changes.
 4) Pigs Fly:- Pig Processes data quickly. and pigs team donot implement features in ways that weigh pig down so it can't fly.
 ------------------------
 PIG History: Developed to fit in a sweet spot between declarative style of SQL and the low-level procedural style of MR.
-Started in Yahoo - released  in 2007. Fall 2007 , pig was
+Started in Yahoo - released  in 2007. Fall 2007 , pig was open sourced via apache incubator.
 Pig is added to AWS elastic MR service in early 2009. 
-
-
+2010 - half of Hadoop jobs at yahoo! were Pig jobs.
+2010 - pig graduated from hadoop sub project to its own top-level apache project.
+-----------------------
+Why the name pig - memorable and easy to spell. all realated are entertaining nomenclature-
+Pig Latin - for language, Grunt for shell and PiggyBank for CPAN like shared repository.
 
 
 
