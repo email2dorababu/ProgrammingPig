@@ -8,3 +8,24 @@ pig -x local  this results into grunt prompt.
 
 grunt>  here with this grunt shell, you can interact with local file system.
 If you omit -x local, and you  have a cluster configuration set in PIG_CLASSPATH, then you can interact with HDFS on ur cluster.
+
+Grunt provides - command line history and editing and also TAB completion(for commands only).
+Grunt is a useful shell, but not full fledged like standard unix shells. Pipes, redirection and background execution are not present in Grunt.
+To exit, type- exit or ctrl-D
+----------------
+You can enter the commands interactively in the shel. and Pig will not start executing PIG latin until it sees either STORE or DUMP.
+however it will do basic syntax and semantic checking to help you catch errors quickly.
+incase you enter a line with errors,You can reenter the line using the same alias, pig will take the last instance of the line you enter.
+----------------------
+HDFS commands in GRUNT
+grunt acts as a shell for HDFS. in 0.5 or later pig, haoop fs shell commands are available. 
+They are accessed using the keyword FS. and use a dash[-] 
+e.g grunt> fs -ls
+see list of all hdfs shell commands
+http://hadoop.apache.org/common/docs/r0.20.2/hdfs_shell.html
+and basic unix commands are also supported.
+
+cat filename - print contenst to stdout, you can apply this command to DIRECTORY 
+copyFromLocal localfile hdfsfile - copy a file from your local disk to HDFS. this is done serially, not in parallel.
+copyToLocal hdfsfile localfile  - cpies HDFS file to local disk, serially, not in parallel.
+rmr filename - remove files recursively. equivivalant to rm -r in Unix.
