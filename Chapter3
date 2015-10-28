@@ -28,4 +28,15 @@ and basic unix commands are also supported.
 cat filename - print contenst to stdout, you can apply this command to DIRECTORY 
 copyFromLocal localfile hdfsfile - copy a file from your local disk to HDFS. this is done serially, not in parallel.
 copyToLocal hdfsfile localfile  - cpies HDFS file to local disk, serially, not in parallel.
-rmr filename - remove files recursively. equivivalant to rm -r in Unix.
+rmr filename - remove files recursively. equivivalant to rm -r in Unix. use with atmost caution.
+-----------------------------------------
+PG 21 :
+controlling PIG from GRUNT: Grunt provides commands for controlling PIG and MR.
+
+kill jobid - kill mr job associated with jobid. find job id from hadoop JT GUI.
+you can terminate pig process by ctrl-c or kill, not kill -9. this kill -9 does not give pig the change to cleanup temp files
+it is using, which can leave a garbage in your cluster.
+
+
+
+
