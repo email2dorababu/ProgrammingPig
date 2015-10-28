@@ -1,0 +1,7 @@
+Pig does not need to be installed in hadoop cluster.
+It runs on the machine from which you launch jadoop jobs.i.e pig is installed on one or more machines that have access to the 
+hadoop cluster but are not part of the cluster.(i.e not DN or TT nodes). 
+THis machines are called gateway machines or edge machines.
+COre of pig is writen in Java, hence it is portable across OSes.
+The Shell script that starts Pig is a bash Script, so it requires Unix env.
+Set JAVA_HOME.
