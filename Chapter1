@@ -106,7 +106,23 @@ PIG PHILOSYPHY:
 ------------------------
 To BEST contribute to Pig you should be aware of what is accepted and what is not.
 The Pig team produced a Pig project's Philosophy- summariazed as below.
-1) PIG eat anything: - Pig can operate on data whether it has metadata or not. 
+1) PIG eat anything: - Pig can operate on data whether it has metadata or not, it can operate on data that is relational,nested or unstructured.
+it can operate on data beyond files, key/value stores, databases etc.
+2) PIG live anywhere: - It is not tied for one particular parallel framework. It is implemented first on hadoop. But it is supposed to be applied on other than hadoop.
+3) PIGs are domestic animals: - Pig is designed to be easily controlled and modified by its users.
+Pig allows integration of USER code whenever possible. currently it supports UDTF - user defined transformation functions, Userdefined aggregate and user defined conditionals.
+The functions can be written in Java or in scripting languages that can be compiled down to Java(e.g Jython). 
+It support user provided load and store functions.
+It supports external executables via its - STREAM command and Mapreduce JARs via 'mapreduce' command.
+It allows users to provide a custom partitioner for their jobs in some circumstances, and we can set the level of reducer parallelism for their jobs.
+Pig has an optimizer that can rearrange some operations in Pig latin scripts to give better performance, combines MR jobs together etc.
+User can easily turn off this optimizer to prevent it from making changes.
+4) Pigs Fly:- Pig Processes data quickly. and pigs team donot implement features in ways that weigh pig down so it can't fly.
+------------------------
+PIG History: Developed to fit in a sweet spot between declarative style of SQL and the low-level procedural style of MR.
+Started in Yahoo - released  in 2007. Fall 2007 , pig was
+Pig is added to AWS elastic MR service in early 2009. 
+
 
 
 
