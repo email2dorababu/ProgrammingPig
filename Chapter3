@@ -1,1 +1,10 @@
-GRUNT -
+GRUNT - PG 19
+--------------------
+
+GRUNT is pig's interactive shell. With grunt we can enter pig latin interactively and we can interact with HDFS.
+
+to enter GRUNT - type
+pig -x local  this results into grunt prompt.
+
+grunt>  here with this grunt shell, you can interact with local file system.
+If you omit -x local, and you  have a cluster configuration set in PIG_CLASSPATH, then you can interact with HDFS on ur cluster.
