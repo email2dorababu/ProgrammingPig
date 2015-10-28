@@ -5,3 +5,39 @@ THis machines are called gateway machines or edge machines.
 COre of pig is writen in Java, hence it is portable across OSes.
 The Shell script that starts Pig is a bash Script, so it requires Unix env.
 Set JAVA_HOME.
+---------------
+PG-12
+Cloudera - produces RPMs for RedHat based systems and Packages for use with APT on debian systems.
+Also provides TAR bals for other systems that cannot use one of these packages(RPM or APT).
+Benefit is you get professional support. But there will be a delay between apache release of PIG and cloudera.
+
+you can download pig from apache's Maven repository. this includes JAR files for Pig,source code and Javadocs as wellas POM file 
+that defines pig's dependencies.
+Download source from Apache's subversion repository. Also GIT is available.
+-------------------------------
+RUNNING PIG:
+you can run pig locally on your local machine or on your grid. You can also run pig as part of Amazon EMR service.
+
+Running Pig Locally on your machine:
+----------------------------------------------
+RUnning pig locally is called 'local mode'. local mode is useful for prototyping and debugging your pig latin scripts.
+to not to waste cluster resources on small files and small jobs.
+
+0.6 and earlier - pig executed scripts in local mode.
+0.7 later uses the Hadoop class 'LocalJobRunner' that reads from local file system and executes MR jobs locally.
+This has nice property that job running the same way locally as will on your cluster and all run in one process, making debugging easier.
+but it is slow.
+
+Download code from https://github.com/alanfgates/programmingpig
+------------------------------------
+Running Pig on your Hadoop Cluster:
+All of the parsing, checking and planning is done locally(gateway machine). Pig then executes MR jobs in cluster.
+
+The only thing pig needs to know to run on your cluster is - the location of your clusters Namenode and Job tracker.
+NN is the manager of HDFS and JT coordinates MR jobs.
+
+These locations can be found in hadoop-site.xml(Hadoop 0.18 and earlier)
+or they are in 3 separate files(in Hadoop 0.20 and later) core-site.xml,hdfs-site.xml and Mapred-site.xml.
+
+
+
