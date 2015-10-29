@@ -80,6 +80,28 @@ If not available, pig still process the data, by making the best guesses it can 
   
   you can specify the schema without data types. in this case all are assumed bytearrays.
   dividends = load 'NYSE_dividends' as (exchange, symbol, date, dividend);
-  
+  ------------------
+  PG - 28 Schema Syntax
+  data type - syntax - example
+  -------------------------------
+  int - int - as (a:int) , similarly long,float,double, chararray,bytearray.
+  map - map[] or map[type] if given type, here all values of maps will of this type - as (a:map[],b:map[int])
+  tuple - tuple() or typle(list_of_fileds) here list of fields are comma separated list of field declaratations.
+    - as (a:tuple(),b:tuple(x:int,y:int))
+  Bag - Bag{} or bag{t:(list_of_fields)}, here list of fields is comma separated list of field declarations.
+    NOTE- here oddly, the tuple inside the bag must have a name t,eventhoug we will never be able to access that tuple t directly
+    - as (a:bag{}, b:bag{t:(x:int,y:int)})
+    
+    you no need to declare the schema upfront. but production systems that run over the same data every hour or every day ,
+    this run time declaration of schema has some drawnbacks. 
+    whenever your data changes, you have to change your pig latin. it is ok for 5 columns but it is painful for 100 columns.
+    
+    To address this issue, we use some load functions. HCatalog is the metadata repository where we know the schema. or the data 
+    it self have schema like the JSON format. In these cases pig will fetch the schema  from load functions
+    before doing the error checking on your script.
+    
+    mdata = load 'mydata' using HCatLoader() ....
+    
+    
 
 
