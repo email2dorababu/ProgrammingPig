@@ -102,6 +102,10 @@ If not available, pig still process the data, by making the best guesses it can 
     
     mdata = load 'mydata' using HCatLoader() ....
     
-    
-
+    When there is no schema specified at load time, you can access the fields by $ sign.
+    daily = load 'NYSE_daily';
+    calcs = foreach daily generate $7 / 1000, $3 * 100.0, SUBSTRING($0, 0, 1), $6 - $3;
+  
+  Pig does a safe convertion of data type. 
+  PG-29
 
