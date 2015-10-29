@@ -37,6 +37,14 @@ kill jobid - kill mr job associated with jobid. find job id from hadoop JT GUI.
 you can terminate pig process by ctrl-c or kill, not kill -9. this kill -9 does not give pig the change to cleanup temp files
 it is using, which can leave a garbage in your cluster.
 
+Exec [-param param_name=param_value] [-param_file filename] script
+  Executes pig latin script. Aliases defined in script are not imported into grunt.
+  this command is useful for testing your pig latin scripts inside a grunt session.
+Run [-param param_name=param_value] [-param_file filename] script
+  executes pig latin script in the CURRENT grunt shell. the aliases referenced in script are available to grunt,
+  the commands in script are accessible via the shell history. this is another option for testing pig latin scripts inside grunt session.
+  
+
 
 
 
