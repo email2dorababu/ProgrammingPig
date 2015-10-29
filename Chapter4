@@ -1,1 +1,23 @@
 Pig's DATA MODEL
+Data Model - includes Pig's Data types, how pig handles missing data, and how you can describe your data to pig.
+
+TYPES: PIG data types are divided into two categories - SCALAR types(contains single value), and COMPLEX(can contain other types).
+
+SCALAR TYPES: 
+  Scalar types are simple types, all the data types except bytearray are represented by java.lang classes. 
+  This makes them easy to work in the UDFs.
+
+int -java.lang.Integer.  4-byte signed integer
+long - java.lang.Long. 8-byte signed integer
+float - 4 bytes(note Constant floats are expressed as a floating point number with an 'f' appended.
+  simple form 3.14f or exponent form 6.022e23f
+double - 8 byte.
+Chararray - java.lang.String. it is string or character arrya. \u unicpde chars followed by four digit hexa decimal value
+  Ctrl-A is \u0001. \t for tab, \n for Return. constant chararrays are quoted in single quotes. e.g 'fred'
+
+BYTEARRAY - a blob or array of bytes. are represented in interfaces by JAVA class DATABYTEARRAY that wraps a Java byte[].
+  There is no way to specify a constant bytearray.
+
+Complex Types :
+  
+
