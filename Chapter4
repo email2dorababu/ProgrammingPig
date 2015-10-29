@@ -19,5 +19,67 @@ BYTEARRAY - a blob or array of bytes. are represented in interfaces by JAVA clas
   There is no way to specify a constant bytearray.
 
 Complex Types :
+  We have 3 complex data types- MAPS, TUPLES, BAGS. all of these can contain any type of data , including complex types.
+  so we can have a map where the value field is a bag, this bag contains a tuple ,field of this tuple is a map.
+
+---------------------
+MAP - PG 24
+  MAP in pig is - chararray TO data element mapping. element is any pig type(complex or simple). chararray is called a key 
+  used as an index to find the data element referred to as the value. 
+  Because pig does not know the type of the value, it will assume it as binary - see the section CASTS on how you can 
+  cast the byte array.
+  you can have values of diff types. e.g name as key value 'abc' and age as key and 20 as value.
+  but you can declare all values to be of same type from 0.90. in this way pig can avoid runtime type casting.
   
+  Map is represented as  [ 'name'#'bob', 'age'#55]  - 
+    Brackets to delimit MAP, 
+    Hash between keys and values and 
+    a comma between key-value pairs
+  TUPLE - is a fixed length, ordered collection of Pig data elements. 
+  (ORDERED collection means you can access the fields by position)
+  Tuples are devided into fields, each field contains one data element. these elements can be different types..
+  Tuple is analogous to a row in SQL, fields are like SQL columns.
+  Tuple may or may not have schema associated with it. if schema is associated, it allows pig to check the data in the
+  tuple is what the user expects and schema also allows users to referece the fields of tuple by name.
+  E.G ('bob',55)  - tuple constants use paranthesis to indicate the tuple and commas to delimit fields in the tuple.
+  the above is touple with two fields.
+
+BAG - it is an unordered collection of typles - 
+  because it has no order, it is not possible to reference tuples in a bag by position.
+  like tuples, a bag may or may not have a schema.
+  {('bob',55),('sally', 52), ('john', 25)} - bag constant. tuples are enclosed using braces, with tuples in bag are 
+  separated by commas. Here we have 3 tuples each with two fields.
+  
+Note : Bag is the one type in pig that is not required to fit into memory. while grouping collections, bags are used to store
+these grouped collections and they become quite large. Pig has the ability to spill bags to disk when necessary, keeping only 
+partial sections of a bag in memory. size of the bat is limited to amount of local disk available for spilling the bag.
+
+To determine howmuch memory you need in Pig to hold all your data(e.g in a join that needs to hold a hash table in memory),
+you may need as a rule of thumb, FOUR times as much memory it does disk to represent the uncompressed data.
+This is because, all values are represented as Java types in memory, which will have additional overhead.
+
+NULLS :
+  Data of any type can be null. Nulls in pig are treated same as SQL, which is completely diff from the concept of nulls in 
+  C,Java, Python etc. In pig null means Unknown. this mighg be because of data is missing, an error occured in processing etc.
+  but in most pgm languages, null means when a value is unset or does not point to a valid address or object. this is diff concept.
+  You need to keep this in mind when writing UDFs and Pig latin scripts.
+  
+PG-27
+SCHEMAS : pig has a very relaxed attitude when comes to schemas. this is a consequence of pigs philosophy of eating anyting.
+If schema is available, pig makes use of it for upfront error checking and for optimization. 
+If not available, pig still process the data, by making the best guesses it can based on how the script treats the data. 
+1)first we see HOW you can communicate the schema to PIG.
+2)second we examine how pig handles the case where you do not provide it with the schema.
+
+  Easiest way to communicate the schema of your data to pig is to Explicitly tell Pig what it is when you load the data.
+
+  e.g dividends= load 'NYSE_dividends' as (exchange:chararray,symbol:chararray, date:chararray,dividend:float);
+  
+  pig now expects your data to have four fields, when more fields are there , extrafields will be truncated. 
+  if less fields then pad the end of the record with nulls.
+  
+  you can specify the schema without data types. in this case all are assumed bytearrays.
+  dividends = load 'NYSE_dividends' as (exchange, symbol, date, dividend);
+  
+
 
