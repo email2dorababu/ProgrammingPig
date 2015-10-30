@@ -1,1 +1,30 @@
+PG 33
 Introduction To PIG LATIN:
+Advanced features are covered in Chapter 6.
+----------------------------
+Basics: 
+Pig latin is data flow language.
+Each processing step results in new data set, or relation.
+eg. input = load 'data' -  input is name of the relation resulting from loading of data set 'data'.
+Relation name is called ALIAS.
+Relation names are not variables. Once made, assignment is permanent. But you can reuse the names.
+
+A = load 'NYSE_dividends' (exchange, symbol, date, dividends);
+
+Field Names - dividends,symbol.
+A - relation name(alias).
+
+The fields contain different value for each record , but you cannot assign values to them.
+Relation and filed names should start with alphabetic character. can contain alphanumeric and _(underscore).
+
+Case Sensitivity:
+-------------------
+UDF,Relation, field names are case sensitive. e.g COUNT is not the same as count UDF.
+Keyworkds are not case sensive . e.g LOAD is equivalent to load.
+
+Comments -SQL style --,/* */
+---------------------------------
+Input and Output:
+
+
+
