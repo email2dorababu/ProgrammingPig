@@ -1,7 +1,8 @@
 Pig's DATA MODEL
 Data Model - includes Pig's Data types, how pig handles missing data, and how you can describe your data to pig.
 
-TYPES: PIG data types are divided into two categories - SCALAR types(contains single value), and COMPLEX(can contain other types).
+TYPES: PIG data types are divided into two categories - SCALAR types(contains single value), and COMPLEX(can contain other 
+types).
 
 SCALAR TYPES: 
   Scalar types are simple types, all the data types except bytearray are represented by java.lang classes. 
@@ -50,9 +51,10 @@ BAG - it is an unordered collection of typles -
   {('bob',55),('sally', 52), ('john', 25)} - bag constant. tuples are enclosed using braces, with tuples in bag are 
   separated by commas. Here we have 3 tuples each with two fields.
   
-Note : Bag is the one type in pig that is not required to fit into memory. while grouping collections, bags are used to store
-these grouped collections and they become quite large. Pig has the ability to spill bags to disk when necessary, keeping only 
-partial sections of a bag in memory. size of the bat is limited to amount of local disk available for spilling the bag.
+Note : Bag is the one type in pig that is not required to fit into memory. while grouping collections, bags are used to 
+store these grouped collections and they become quite large. Pig has the ability to spill bags to disk when necessary, 
+keeping only partial sections of a bag in memory. size of the bat is limited to amount of local disk available for
+spilling the bag.
 
 To determine howmuch memory you need in Pig to hold all your data(e.g in a join that needs to hold a hash table in memory),
 you may need as a rule of thumb, FOUR times as much memory it does disk to represent the uncompressed data.
@@ -60,8 +62,9 @@ This is because, all values are represented as Java types in memory, which will 
 
 NULLS :
   Data of any type can be null. Nulls in pig are treated same as SQL, which is completely diff from the concept of nulls in 
-  C,Java, Python etc. In pig null means Unknown. this mighg be because of data is missing, an error occured in processing etc.
-  but in most pgm languages, null means when a value is unset or does not point to a valid address or object. this is diff concept.
+  C,Java, Python etc. In pig null means Unknown.this mighg be because of data is missing, an error occured in processing etc.
+  but in most pgm languages, null means when a value is unset or does not point to a valid address or object.
+  this is diff concept.
   You need to keep this in mind when writing UDFs and Pig latin scripts.
   
 PG-27
@@ -89,14 +92,16 @@ If not available, pig still process the data, by making the best guesses it can 
   tuple - tuple() or typle(list_of_fileds) here list of fields are comma separated list of field declaratations.
     - as (a:tuple(),b:tuple(x:int,y:int))
   Bag - Bag{} or bag{t:(list_of_fields)}, here list of fields is comma separated list of field declarations.
-    NOTE- here oddly, the tuple inside the bag must have a name t,eventhoug we will never be able to access that tuple t directly
+    NOTE- here oddly, the tuple inside the bag must have a name t,eventhoug we will never be able to access that 
+    tuple t directly
     - as (a:bag{}, b:bag{t:(x:int,y:int)})
     
     you no need to declare the schema upfront. but production systems that run over the same data every hour or every day ,
     this run time declaration of schema has some drawnbacks. 
     whenever your data changes, you have to change your pig latin. it is ok for 5 columns but it is painful for 100 columns.
     
-    To address this issue, we use some load functions. HCatalog is the metadata repository where we know the schema. or the data 
+    To address this issue, we use some load functions. HCatalog is the metadata repository where we know the schema. 
+    or the data 
     it self have schema like the JSON format. In these cases pig will fetch the schema  from load functions
     before doing the error checking on your script.
     
@@ -137,3 +142,18 @@ Not all casts are allowed in Pig.  Casts between allowed scalar types are as bel
 Casts to Bytearray are never allowed, because pig does not know how to represent the various data types in binary format.
 Casts from Bytearrays to any type are allowed.
 Casts to and from comples types are currently not allowed, except from bytearray in some cases.
+
+Pig will always widen types to fit when it needs to insert these implicit casts. 
+So, int and long together will result in a long;
+int or long and float will result in a float; and int, long, or float and double will result in a double. 
+There are no implicit casts between numeric types and chararrays or other types.
+----------------------------------
+PG 32 -
+Strongly typed Vs Weakly typed languages:
+In a strongly typed computer language (e.g., Java), the user must declare up front thetype for all variables. 
+In weakly typed languages (e.g., Perl), variables can take on values of different type and adapt as the occasion demands.
+
+So PIG is what? 
+For the most part it is strongly typed. If you describe the schema of your data, Pig expects your data to be what you said. 
+But when Pig does not know the schema, it will adapt to the actual types at runtime.
+we can say, Pig is gently typed.
