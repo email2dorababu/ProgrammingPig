@@ -82,7 +82,7 @@ Relational Operators  PG 37:
   Basics are covered here. advanced in next chapters.
   ----
 FOREACH - 
-  
+  foreach - takes a SET OF EXPRESSONS and applies to EVERY RECORD in the data pipeline, hence the name foreach.
   
 
 
