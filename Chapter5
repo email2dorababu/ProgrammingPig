@@ -63,9 +63,27 @@ By USING clause, you can use a different store function.
  store processed into 'processed' using HbaseStorage();
  You can pass arguments to your store function. e.g 
  store processed into 'processed' using PigStorage(',');
- Here processed will be a directory, not a single file. the no of part files created depends on the parallelism of the last
- job before the STORE.
+ Here processed will be a directory, not a single file. 
+ the no of part files created depends on the parallelism of the last job before the STORE.
+ For maponly job, o/p depends on no of maps , controlled by Hadoop not PIG.
+ if it has reduces, the o/p part files determined by the paralel level set for that job.
+ ----------------------
+DUMP:
+ If we want ot see the output on screen instead of storing it,useful for debugging and prototyping sesssions.
+ DUMP directs the output of your script to your screen.
+ dump processed;
  
+ maps are surrouned by [],bags {}, tuples (). missings values are rep by nulls and fields are separated by commas.
+ ------------------------------------
+ 
+Relational Operators  PG 37:
+  These relational operators are the MAIN TOOLS PigLatin provides to operate on your data.
+  They allows you to transform data by SORTING,GROUPING,JOINING,PROJECTION and filtering.
+  Basics are covered here. advanced in next chapters.
+  ----
+FOREACH - 
+  
+  
 
 
 
