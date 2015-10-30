@@ -26,5 +26,52 @@ Comments -SQL style --,/* */
 ---------------------------------
 Input and Output:
 
+LOAD - 
+------------
+First step to any data flow is to specify your input. Pig latin we specify the input with the 'LOAD' statement.
+Defaults are - load looks data on HDFS , tab delimited, default load function is PigStorage.
+[Here it is FUNCTION,so u can pass arguments]
+Default incase of relative paths are home directory on HDFS, /users/yourlogin . 
+you can specify URLs e.g. hdfs://nn.acme.com/data/examples/NYSE_dividends, here the data is red from HDFS in
+nn.acme.com as a Namenode.
+
+Usually most data wont be tab delimited, and you may also load data from storages other than HDFS. 
+You specify the function for loading your data with the 'USING' clause.
+e.g divs=load 'NYSE_dividends' using HBaseStorage();  using the loader for Hbase.
+You can pas arguments to your load function via USING clause.
+e.g divs=load 'NYSE_dividends' using PigStorage(',') - for comma separated text data.
+
+Load stmt also can have 'AS' clause, allows you to specify the schema of the data you are loading.
+divs=load 'NYSE_dividends' as (exchange,symbol,date,dividends);
+You can specify file or directory as input. If directory then pig will read all the files in directory, 
+also it reads sub directories in the input directory.
+
+PG-35:
+PigStorage and TextLoader are two built-in Pig load functions that operates on HDFS files, supports globs.
+GLOBS, you can read multiple files under different directories and few files under a single directory.
+Glob in Hadoop 0.20 -Table 5.1:
+? , *, [abc] matches single char from char set a,b,c, [a-z] matches single char from char range(a..z) inclusive.
+[^abc] - single char not matching a,b,c. ^ must occur immediately to the right of the opening bracket.
+[^a-z], \c removes any special meaning of character c. 
+{ab,cd} - matching string from string set{ab,cd}
+--------------------
+STORE :
+  once you finished processing your data, you will want to write it out somewhere. STORE statement stores your data on HDFS
+  in TAB delimited file using PigStorage function. you can specify path or URL. Default store function is PigStorage.
+  store processed into '/data/examples/processed';
+By USING clause, you can use a different store function.
+ store processed into 'processed' using HbaseStorage();
+ You can pass arguments to your store function. e.g 
+ store processed into 'processed' using PigStorage(',');
+ Here processed will be a directory, not a single file. the no of part files created depends on the parallelism of the last
+ job before the STORE.
+ 
+
+
+
+
+
+
+
 
 
