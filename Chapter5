@@ -83,12 +83,125 @@ Relational Operators  PG 37:
   ----
 FOREACH - 
   foreach - takes a SET OF EXPRESSONS and applies to EVERY RECORD in the data pipeline, hence the name foreach.
+  For each is the Projection operatior in PIG.
+  e.g to select only few fields,
+  B=foreach A generate user,id;
   
+  Expressions in FOREACH: pg-37
+  Foreach supports an array of expressions.
+  simple expression is constants and field references.
+  field refereneces are by name or by position. Positional references are preceded by $ sign, starts from ZERO.
+  e.g- gain=foreach prices generate close-open;   - expression using field names
+  gain1=foreach prices generate $6-$3;  - expression using positional references.
+  
+  both gain,gain1 contain same value. postional ref are useful when we donot know the schema.
+  You can use below things to reference fields:
+  * - to access all fields in a tuple.
+  .. - to refer range of fields. useful when we have many fields.
+  
+  ----------------
+prices = load 'NYSE_daily' as (exchange, symbol, date, open,
+high, low, close, volume, adj_close);
+beginning = foreach prices generate ..open; -- produces exchange, symbol, date, open
+middle = foreach prices generate open..close; -- produces open, high, low, close
+end = foreach prices generate volume..; -- produces volume, adj_close
+  -------------------
+Standard arithmetic operations as expressions.
++,-,*, / 
+NOTE - these operators return values of their own type .. e.g 5/2 is 2 where as 5.0/2.0 is 2.5.
+For integers modulo operator % is supported.
+- negative (unary operator) supported for int and flots. Precedence rules are obeyed in pig.
+NULLS are viran  for all arithmatic operators. 
+x+null = null for all values of x.
+
+BINCOND  - binary condition operator- Begins with a boolean test, followed by ? then value to be returned when test is true
+then : colon, finally the value to be returned if the test is false. If the test returns null, bincond returns null. 
+Both value args i.e returns values in case of true/false must be of same type.
+2 == 2 ? 1 : 'fred' -- returns error, since both values are of diff type.
+2 == 2 ? 1 : 4 --returns 1
+2 == 3 ? 1 : 4 --returns 4
+null == 2 ? 1 : 4 -- returns null
+
+PG - 38:
+To extract data from complex types, use projection operators, Maps #(hash) followed by the NAME of the KEY as a string
+(i.e with quotes surroundign the name)
+eg.  avg=foreach bball generate bat#'batting_average';  non exisintg fields returns null.
+Tuple projection is done using .(dot operator), fields can be referenced by name or position.
+A = load 'input' as (t:tuple(x:int, y:int));
+B = foreach A generate t.x, t.$1;    NOTE - non existing postional field returns null, non exisiting field referenced by
+name will produce an error.
+
+BAG - projection is not as straight forward as map and tuple projection. Bags donot gurantee any order in which their tuples
+are stored, so allowing a projection of tuples inside bag would not be meaningful.
+Instead you can project fields of bag to create a new bag with only those fields.
+A = load 'input' as (b:bag{t:(x:int, y:int)});
+B = foreach A generate b.x;
+This will produce a new bag whose tuples have only the field x in them. You can project multiple fields in a bag by 
+surrounding the fields with parentheses and separating them
+by commas:
+A = load 'input' as (b:bag{t:(x:int, y:int)});
+B = foreach A generate b.(x, y);
+
+here above b.x is not a scalar, it is a bag. 
+
+A = load 'foo' as (x:chararray, y:int, z:int);
+B = group A by x; -- produces bag A containing all the records for a given value of x
+C = foreach B generate SUM(A.y + A.z);  -- will throw error. because a.y and b.y are bags.
+so use 
+A = load 'foo' as (x:chararray, y:int, z:int);
+A1 = foreach A generate x, y + z as yz;
+B = group A1 by x;
+C = foreach B generate SUM(A1.yz);
+-----------------
+UDFS in Foreach - User defined functions can be invoked in FOREACH.
+PG - 39:
+These are called eavluation functions or EVAL functions. because they are part of foreach statement.
+These udfs take one record at a time and produce one output.
+NOTE - either the input or the output can be bag, so the one record can contain a bag of records.
+-- udf_in_foreach.pig
+divs = load 'NYSE_dividends' as (exchange, symbol, date, dividends);
+--make sure all strings are uppercase
+upped = foreach divs generate UPPER(symbol) as symbol, dividends;
+grpd = group upped by symbol; --output a bag upped for each value of symbol
+--take a bag of integers, produce one result for each group
+sums = foreach grpd generate group, SUM(upped.dividends);
+
+Eval funcs can take * as argument, which passes the entire record to the function. they can also be invoked with no args also
+--------------------
+Naming Fields in FOREACH: 
+ The result of each for each stmt is a new tuple, usually with a diff schema than the tuple that was an input to foreach.
+ NOTE for fields that are simple projections with no other operations applied, pig keeps the same name as before 
+divs = load 'NYSE_dividends' as (exchange:chararray, symbol:chararray,date:chararray, dividends:float);
+sym = foreach divs generate symbol;
+describe sym;
+sym: {symbol: chararray}
+
+Now the expression is not a simple projection, pig doesnot assign a name to the field.here we can access the field only by 
+positional parameter($). you can assign a name to the field with 'as' clause.
+in_cents = foreach divs generate dividends * 100.0 as dividend, dividends * 100.0;
+describe in_cents;
+in_cents: {dividend: double,double}
+----------------------------
+FILTER -   PG 40.
+  filter stmt allows you to select which records will be retained in your data pipeline.
+  FILTER contains a predicate. the predicate evaluates to true for a given record, that record will passed down the pipeline.
+  otherwise it will not.
+  predicates can contain ==(equality), !=,>,>=,<,<= for comparing any scalar data type. == and != to compare maps and tuples.
+  
+  To use with tuples, bot tuples must have the same schema or no schema. None of the equality operators can be applied to bag
+  
+  for Chararrays- you can test to match with the regular expression:
+  startswith= filter divs by symbol matches 'CM.*';   --note pig uses Java's regular expession formats.
+  E.G to match with fred, you should use .*fred.* and not 'fred'. later will match only the chararray 'fred'
+  notstartswithcm = filter divs by not symbol matches 'CM.*'; -- chararrays that do not match a reg exp with NOT.
+  PG - 41:
+  Combine multiple predicates into one using boolean operator and/or. and reverse the boolean outcome by NOT.
+  
+  As is standard, the precedence of Boolean operators, from highest to lowest, is not, and,
+or. Thus a and b or not c is equivalent to (a and b) or (not c).
 
 
-
-
-
+  
 
 
 
