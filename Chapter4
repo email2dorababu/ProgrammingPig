@@ -108,4 +108,32 @@ If not available, pig still process the data, by making the best guesses it can 
   
   Pig does a safe convertion of data type. 
   PG-29
+There are also cases where Pig cannot make any intelligent guess:
+--no_schema_filter
+daily = load 'NYSE_daily';
+fltrd = filter daily by $6 > $3;
+> is a valid operator on numeric, chararray, and bytearray types in Pig Latin. So, Pig has
+no way to make a guess. In this case, it treats these fields as if they were bytearrays,
+which means it will do a byte-to-byte comparison of the data in these fields.
 
+PG-30
+Finally, Pig’s knowledge of the schema can change at different points in the Pig Latin script.
+We can load the data without a schema and then after foreach, the schema can be formed.
+Pig can start out knowing the schema, but if the data is mingled with other data without a schema, the schema can be lost.
+That is Lack of schema is contagious.
+
+divs = load 'NYSE_dividends' as (exchange, stock_symbol, date, dividends);
+daily = load 'NYSE_daily';
+jnd = join divs by stock_symbol, daily by $1;
+In this example, because Pig does not know the schema of daily, it cannot know the
+schema of the join of divs and daily.
+-----------------------------
+CASTS : 
+Syntax for cast in pig is same as in java.  the TYPE name in parentheses before the value.
+player = load 'baseball' as (name:chararray, team:chararray,pos:bag{t:(p:chararray)}, bat:map[]);
+unintended = foreach player generate (int)bat#'base_on_balls' - (int)bat#'ibbs';
+
+Not all casts are allowed in Pig.  Casts between allowed scalar types are as below.(Table 4.2 pg 31)
+Casts to Bytearray are never allowed, because pig does not know how to represent the various data types in binary format.
+Casts from Bytearrays to any type are allowed.
+Casts to and from comples types are currently not allowed, except from bytearray in some cases.
