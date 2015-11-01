@@ -201,6 +201,309 @@ FILTER -   PG 40.
 or. Thus a and b or not c is equivalent to (a and b) or (not c).
 
 
+PG 41
+
+Pig will short circuit Boolean operations when possible.
+e.g in 1==2 and udf(x) then UDF will never be invoked.
+Similarly, 1==1 or udf(x) will never invoke UDF.
+
+NULLs in boolean operations follow SQL trinary logic.
+X==null results in NULL not true or false , even x is null.
+
+Filter pass through only those values that are true.
+The way to look for null values is to use the IS NULL operator.
+To find values that are not null, use IS NOT NULL.
+
+NULL neither matches nor fails to match any regular expression value.
+
+UDFs are there to evaluate expressions. There are UDFs specifically for 
+Filtering records, called FILTER FUNCS. 
+These are EVAL funcs that return a boolean value and cab be invoked in the FILTER statement.
+FILTER functions cannot be used in FOREACH statement.
+-------------------------------------------|
+GROUP pg-41
+Group statement collects records together with the same key.
+Grouping operator looks same as SQL but in pig latin it is fundamentally different than the one in SQL.
+In SQL group by clause creates a group that must feed directly into one or more aggregate functions.
+In Pig latin there is no direct connection between GROUP and aggregate functions.
+GROUP – collects all records with the same KEY into a bag.
+You can pass this bag into an aggregate function.
+
+Daily=load ‘NYSE_daily’ as (exchange,stock);
+Grpd= group daily by stock;
+Cnt=foreach grpd generate group, count(daily);
+
+Records coming out of the group by statement have two fields, the KEY and the BAG of collected records. The key field name is group.
+Bag is name is the same name as ailas ‘Daily’. If the relation daily have no schema, the bag daily will have no schema.
+
+Describe grpd;
+Grpd:{group:bytearray, daily:{exchange:bytearray,stock:bytearray}}
+
+You can group on multiple keys, but the keys must be surrounded by parentheses. The result is still 2 fields, group and a bag.
+Here group is a tuple with a field for each key.
+
+Grpd= group daily by(exchange,stock);
+Avg=foreach grpd generate group,AVG(daily.dividends);
+Describe grpd;
+Grpd:{group: (exchange:bytearray,stock:bytearray), daily:{exchange:bytearray,stock:bytearray}}
+
+ALL used to group together all of the records in your pipeline
+Grpd=group daily all;
+For each grpd generate COUNT(daily)
+
+Note: the records coming out of group all has the key ‘all’. Because key does not matter because you will pass the bag directly to an aggregate functions such as COUNT.
+
+Group is the first operator that usually force a REDUCE phase.
+If the pipeline is in a map phase, this will force it to shuffle and then reduce. If the pipeline is already in a reduce , this will force it to pass through map, shuffle and reduce phases.
+
+This collecting all records may often get skewed results. Because no fo values per key wont be distributed evenly. They might have a Gaussian or power law distribution. So some reducers get far more data than others. 
+This skew will significantly slow your processing due to MR job is not finished until all your reducers have finished. And some cases some reducers may be impossible to handle much data.
+
+Pg- 43
+
+Pig has no of ways to deal the skew to balance out the load across your reducers. 
+The one applies to ‘grouping’ is Hadoop’s Combiner.
+This doesnot remove all skew, but places a bound on it.
+For most jobs the no of mappers will be tens of thousands,the absolute no of records per reducer will be small so that the reducers can handle them quickly.
+
+But the problem is not all calculations can be done using the combiner.
+Distributive calculations like sum can be nicely fit into the combiner.
+
+Algebraic – are calculations that can be decomposed into an initial steps, any no of intermediate steps, and a final step.
+
+Count is algebraic function. Initial step is count and intermediate and final steps are sums. Distributive is a special case of algebraic, where the initial intermediate and final steps are all the same.
+
+Session analysis is where you track a user’s actions on a website is a calculation that is not algebraic.
+You must have all the records sorted by timestamp before you can start analyzing their interaction with the site.
+
+Pig’s operators and built in UDFs use combiner whenever possible.
+Because of its skew-reducing features and because early aggregation greatly reduces the amount of data shipped over the network and written to disk, thus speeds up the performance significantly.
+
+UDFs can indicate when they can work with the combiner by implementing ALGEBRAIC interface.
+See ALGEBRAIC interface on pg 135.
+
+How to determine level of parallelism on GROUP operation – see pg-49 parallel.
+In Group all operations you serialize your pipeline. So you cannot access the records in parallel, until you split out the single bag.
+
+PG – 44:
+Group handles nulls in the same way that sql handles.Nulls are collected into the same group. Note that this is direct contradiction to the way expressions handles nulls,( i.e neither null==null not null!=null are true) and to the way join (see pg 45 join) handles nulls.
+
+--------------------------|
+ORDER BY –
+This sorts your data for you, producing a TOTAL ORDER of your output data. TOTAL ORDER means not only the data is sorted in each partition of your data and it is also guaranteed that all records in partition ‘n’ are less than all records in partition ‘n-1’ for all ‘n’.
+
+Means CAT will output your data in order. Syntax of order is similar to group. You indicate a key or set of keys. The diff is there are no parentheses around the keys when multiple keys are indicated in order.
+
+Bydate = order daily by date;
+Bydatesymbol=order daily by date,symbol;
+
+Reverse the order of sort by appending DESC to a key in the sort.other keys will be sorted in ascending order.
+
+Byclose= order daily by close desc, open;
+
+Numeric values are sorted numerically, char array fields lexically, byte array fields are lexically using byte values than char values.
+Sorting by maps tuples or bags produce errors. Nulls are taken to be smaller than all values thus always appear first (or last when desc used)
+
+PG – 45
+Skew of the data is very common, this affects ORDER just as GROUP, causes some reducers take significantly longer than others. 
+Pig balances the output across reducers. 
+
+It does this by- first sampling the input of the order statement to get an estimate of the key distribution.
+
+Based in this sample, it then builds a partitioner that produces a balanced total order – see shuffle phase on pg191.
+
+e.g a char array with values a,b,e,e,e,e,e,e,m,q,r,z – to order, say we have 3 reducers. The partitioner would decide a-e to go to reducer1,e to 2 and m-z to reducer3. Notice that the records with Key e will be sent to 1 and 2 . this allows partitioner to distribute the data evenly. In practice we rarely see reducer time exceeds 10% when using this algorithm.
+
+Imp side effect is to minimize skew pig distributes records across partitions. This is diff from def MR convention that all rec of given key sent to the same partition.
+
+So if u want to send same key data to one reduer, do not use Pig’s order statement to sort data for it.
+
+PG – 45.
+Order by always causes a reducer phase in data pipeline. Also an additional MR job is added for sampling(this is light weight and do not take more than 5% of total job time).
+
+DISTINCT
+Removes duplicate recors. It works only on entire recors, not on individual fields; 
+Uniq=distinct daily;
+
+Distinct forces a reduce phase. It makes use of combiner to remove duplicates in map phase.
+For how to do select count(distinct x) see Nested for each in pg 59.
+
+----------------
+JOIN
+Join is one of the workhorse of data processing. Used in many of piglatin scripts.
+Join selects recors from one input to put together with recors from another input done by indicating keys for each input. When those keys are equal the two rows are joined. Recors with no match are dropped.
+
+Jnd=join daily by symbol, divs by symbol;
+
+You can join multiple keys – keys must be same in number, same or compatible types.
+Jnd=join daily by (symbol,date) , divs by (symbol,date);
+
+Like foreach, join preserves the names of the fields of input passed to it. Also prepends the name of the relation the field came from, followed by adding ‘::’. 
+Describe jnd
+Jnd:{daily::exchange:bytearray,daily::symbol:bytearray,
+	Divs::exchange:bytearray,divs::symbol:bytearray}
+
+Daily:: prefix need to be used only when the field name is no longer unique in the record. E.g daily::symbol or divs::symbol we have to use.
+
+PIG supports OUTER JOINS. In outer joins recors that do not have a match on the other side are included, with null values being filled in for the missing fields. Outer join are LEFT,RIGHT or FULL.
+
+Jnd= join daily by (symbol,date) left outer, divs by (symbol,date);
+We can omit OUTER. 
+
+PG-47
+Outer joins are supported only when pig knows the schema of the data on the side(s) for which it might need to fill in nulls.
+
+Thus, Left outer joins, it must know the schema on the right side.for right join it must know the left side schema and for full outer joins, it must know both. Without schema pig will not know how many null values to fill in.
+
+For inner joins – all the null key values are dropped. For outer joins they will be retained but will not match any recors from the outer input.
+
+You can do multiple joins but only for inner joins.
+Alpha = join a by x , b by u, c by e;
+
+
+Self joins are supports, but you need to load the data twice.
+This is because of ambiguity in field name after the join.so we need to load it twice. For now pig cannot detect that both load operatiosn are same, so load it only once.
+
+PIG does the join operations in MAP phase to annotate each record whith which input it came from. It then uses the join key as shuffle key. Thus join forces a new reduce phase. 
+Once all rectors with same value for the key are collected together, pig does a cross product between recors from both inputs.
+To minimize memory usage, it has MR order the records coming into the reducer using input annotation it added in the map phase.
+Thus all of the records for the left input arrive first.
+Pig caches these in momory .
+All the recors for the right input arrive second. As each of the recors arrives, it is crossed with each record from the left side to produce an output record.
+
+PG-48
+
+In a multiway join, the left n-1 inputs are held in memory and nth is streamed through.
+It is imp to keep this in mind when writing joins in your pig queries if you know that one of your inputs has more recodrs per value of the chosen key.
+
+PLACING that input ON THE RIGHT SIDE of your join will lower memory usage and possibly increase your script’s performance.
+---------------|
+LIMIT – PG 48
+Limit – allows to see only a limited no of results
+First10=limit divs 10;
+Will return atmost 10 lines.
+
+For all operators except ORDER, pig does not guarantee the order in which records are produced. 
+Putting ORDER immediately before the limit will guarantee that the same results are returned every time.
+ Limit causes an additional reduce phase, since it needs to collect the records together to count how many it is returning.
+It does optimize this phase by limiting the output of each map and then applying limit again in the reducer.
+Incase where limit is combined with order, the tow are done together on the map and reduce. 
+i.e map side – records are sorted by mapreduce and the limit is applied in the combiner. They are sorted again by MR as part of the shuffle and pig applies the limit again in the reducer.
+
+NOTE pig will not terminate reading the input early once it has reached the no of records specified by limit.
+
+-----------------|
+SAMPLE – 
+Sample offers a simple way to get a sample of your data.
+It reads all of your data but returns only a percentage of rows.
+Percentage can be expressed in double value between 0 and 1.
+I.e 0.1 is 10%.
+
+Some=sample divs 0.1; 
+the algorithm is rewritten as FILTER A by random()<=0.1, so the sample will vary with every run.
+-------------------|
+PARALLEL –
+
+Pig allows you specify how parallel it to be. This is acc pigs philosophy of pigs are domestic animals.
+
+PARALLEL clause can be attached to any relational operator in pig latin.
+But, it controls only REDUCE SIDE PARALLELISM. So it makes sense to apply parallel to operators that force a reduce phase. These are GROUP, ORDER, DISTINCT, JOIN,LIMIT, COGROUP and CROSS.
+
+PARALLEL is ingnored in local mode.
+
+Bysymbol= group daily by symbol parallel 10;
+This causes the MR job to have 10 reducers, only that group statement. Does not propagates through script.
+
+Say group reduces the data to large extents, so use parallel 10.
+Now after group you can just apply a parallelism of just 2 for next steps..
+
+Note- PG-50
+You can set a script-wide value using the SET command
+Set default_parallel 10;  as a step in the script.
+And you can override this parallelism to a diff no by specifying the parallel clause in that step explicitly.
+
+You can use parameter substitution to vary the parallelism at run time.
+See param substitution – in 77.
+
+PIG 0.8 onwards, pig added a heuristic to do a gross estimate of what the parallelism should be set to if it is not set.
+
+Based in the initial input size , for every 1G of data it allocates a reduer.it is not effective algorithm, it just prevents the scripts running too slow.this is a safty net, not an optimizer.
+
+NOTE – pig cannot expose map parallelism to users. The INPUT FORMAT tells MR how many map tasks to run, it also suggest where they should be run.
+---------------------------------------------|
+PG – 51 :
+
+User Defined Functions:
+Power of pig lies in it’s own or other’s code via UDFs.
+Till 0.7, you can write UDFs in java, makes it very easy to add.
+0.7 onwards, you can write in Jython, only python 2.5 supported, python 3 is not supported.
+
+Built in UDFS are included in Pig JAR – see on 171.
+Piggy Bank is collection of user contributed UDFs , packaged and released along with pig, are not part of pig Jar. Thus you have register them manually in your script. See pg-187.
+See chapter 10 to how to write your own udfs. You can use some static java functions as UDFs as well.
+-------------------------------------------|
+Registering UDFs – 
+You need to register UDFs to tell pig where to look for it. By REGISTER command.
+
+Register ‘yourpathtopiggybank/piggybank.jar’;
+Backwards= foreach divs generate org.apacje.pig.piggybank.evaluation.string.reverse(symbol);
+
+Pig when you register the jar, pig opens all the registered jars, takes out the files and places them in the jar that it sends to Hadoop to run your jobs.
+
+You can use a short name by issuing –D while invoking
+Pig –Dudf.import.list=org,apache.pig.piggybank.evaluation.string register.pig
+
+ -- in Scrip
+Register ‘your path topiggybank/piggybank.jar’
+Backwards=foreach divs generate reverse(symbol);
+
+We can get rid of register command by using  -Dpig.additional.jars=/usr/local/pig/piggybank/piggybank.jar to command line. Now the register command is no longer necessary.
+
+It is better to use retister and define commands than use the above properties. Use these register and define in shared properties file and using that with your pgi script will make sharing those UDFs easier and assure everyone is using correct version of them.
+
+Pig 0.8 later, register command can also take HDFS path. 
+Register ‘hdfs://user/jar/acme.jar’;
+Pig 0.9 onwards, register can use GLOBS. All jars needed can be stored in one directory and include them all by
+Register ‘/usr/local/share/pig/udfs/*.jar
+
+Registering python UDfs –
+Puthon script must be in your current directory.
+Register ‘production.py’ using jython as bballudfs;
+Calcprod = foreach nonull generate name, bballudfs.production((float)bat#’perc’);
+
+Using jython tells pig that UDF is not written java, it is written in python, and jython is used to compile udf. So you must include jython.jar in classpath when invoking pig. This can be done by PIG_CLASSPATH env variable.
+
+Bballudfs – defines a namespace that UDFs from this file are placed in. All UDFs from this file must be invoked as bballudfs.udfname.
+This is to avoid naming collisions when multiple python files with same udf names are loaded.
+------------------------:
+Define and UDFs – PG 53.
+Define can be used to provide an alias sot that you do not have to sue full package names for your java UDFs. And you can provide constructor ars to UDFs. Define also used in defining streaming commands (coveredin 69).
+See the code in pg-53.
+For eval and filter functions, you can provide the args by define command.
+e.g – pg54 startign example.
+-------------------------|
+Calling Static Java Functions :
+	Java has rich collection of utilities and linbraries. From 0.8 pig  offers “invoker” methods that allows you to treat certain static java functions as they were pig UDFs.
+
+Any public static java functions that takes no argument or some combination of int,long,float,double, string or array and retruns int,long,float,double or string can eb invoked in this way.
+Invoker functiosn are:
+InvokeForInt,InvokeForLong,InvokeForFloat,InvokeForDouble and InvokeForString – depending on the return types.
+
+All have tow constructor args. First is full package, classname and method name, second is space separated list of parameters the java function expects. Only types of parameters are given. If parameter is array, [] is appended to the type name. if the method takes no parameters , second constructor argment is omitted.
+
+E.G use java integer class to translate decimals to hexadecimal, use
+Define hex InvokeForString(‘java.lang.Integer.toHexString’,’int’);
+Inhex =foreach nonnull generate symbol,hex((int)volume);
+
+If a method takes an array of types, pig will expect a bag to pass it where each tuple has a single field of that type.
+See e.g in pg 54 end.
+
+This invoker functions throw illegalArgumentException when you pass a null input. So place a filter before the invocation to prevent this.
+------------------------------------------|
+
+
+
+
   
 
 
