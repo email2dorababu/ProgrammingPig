@@ -1,1 +1,24 @@
 Advanced Pig Latin
+
+PG - 57
+Advanced Relational Operations:
+------------------------------------------
+Advanced features of FOREACH:
+we saw how we can apply expressions to every record in data pipeline.
+Now we will see, how we can explode the no of records in pipeline.
+
+FLATTEN - 
+If you want to remove the level of nesting in a BAG or TUPLE, we can use FLATTEN modifier in FOREACH.
+pos = foreach players generate name,flatten(position) as position;
+bypos = group pos by position;
+
+A foreach with a flatten produces a cross product of every record in the bag with all of the
+other expressions in hte generate statement.
+
+NAME, position bag
+e.g - Jorge Posada,{(Catcher),(Designated_hitter)},... once this passed through flatten statement, it will be two records:
+
+jorge posada,cacher
+jorge posada, designated_hitter
+
+If there is more than one bag and both are f
