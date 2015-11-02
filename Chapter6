@@ -43,5 +43,103 @@ As long as the field names are not ambiguous, we no need to use the bagname:: pr
 similarly, if you flatten a bag or tuple with no schema and donot use 'as' clause , the results coming out of foreach will
 have null schema. this is because pig will not know howmany fields the flatten will result in.
 
+---------------
+NESTED FOREACH  - PG 59
+
+You can apply a set of relational operations to each record in your pipeleine by NESTED FOREACH or INNER FOREACH.
+One example is - find no of unique entries in a group .
+
+daily = load 'NYSE_daily' as (exchange, symbol); -- not interested in other fields
+grpd = group daily by exchange;
+uniqcnt = foreach grpd {
+
+      sym = daily.symbol;
+      uniq_sym = distinct sym;
+      generate group, COUNT(uniq_sym);
+      
+};
+----- several new things here..
+instead of 'generate' immediately following 'foreach', a { (open brace) signals that we will be nesting operators inside this
+for each. 
+In this nested code, each record passed to foreach is handled one at a time.
+
+First line - sym=daily.symbol would not be legal outside foreach. this is roughly equivalent to 
+sym=foreach grpd generate daily.symbol, but this os not really another for each.
+Here this line takes the bag 'daily' and produces a new relation sym, which is a bag with tuples that have only the field 
+symbol.
+
+Second line -applies distinct operator to the relation sym. Even inside foreach, relational operators can be applied ONLY to
+RELATIONS; they cannot be applied to Expressions. e.g uniq_sym=distinct daily.symbol will produce syntax error, because 
+daily.symbol is an expression, not a relation. sym is a relation. i.e you cannot take an expression and create a relation 
+inside foreach.
+
+The last line in nested for each must always be generate. this tells pig how to take the results of the nested operations and
+produce a record to be put in the outer relation(here it is uniqcnt). 
+if the script have generate group, uniq_sym then uniq_sym would be treated as a bag for the purpose of the generate stmt.
+
+For now - distinct,filter,limit and order are supported inside foreach.
+---------
+Few more examples How this feature can be useful :
+Example 1:
+Sort the contents of a bag before the bag is passed to a UDF. this is convenient for UDFs that require all of their inout to 
+come in a certain order. 
+PG -60
+analyzed = foreach grpd {
+sorted = order daily by date;
+generate group, analyze(sorted);
+};
+
+Here doing Sorting in PigLatin rather than in UDF is important for couple of reasons.
+One is pig can offload the sorting to MR. MR has the ability to sort by a secondary key while grouping it. so order stmt does
+not require a separate sorting operation.
+Two, UDF does not need to wait for all data to be available before it starts processing. instead it can use the ACCUMULATOR
+interface(PG 139), which is much more memory efficient.
+
+Example 2: 
+This feature can be used to find the TOP K elements in a group.
+
+grpd = group divs by symbol;
+top3 = foreach grpd {
+sorted = order divs by dividends desc;
+top = limit sorted 3;
+}
+
+Currently the nested portions of code alwaus run serially for each record handed to them.
+Additionally you can use parallel 10 clause to  grpd = group divs by symbol stmt, the ordering and limiting takes place 
+in 10 reducers. 
+
+You can have a complex pipeleine inside the foreach. PG - 61 , ex-
+--double_distinct.pig
+divs = load 'NYSE_dividends' as (exchange:chararray, symbol:chararray);
+grpd = group divs all;
+uniq = foreach grpd {
+      exchanges = divs.exchange;
+      uniq_exchanges = distinct exchanges;
+      symbols = divs.symbol;
+      uniq_symbols = distinct symbols;
+      generate COUNT(uniq_exchanges), COUNT(uniq_symbols);
+};
+Pig acually runs this pipeline once for each expression in 'Generate', here this has no side effects because the two data 
+flows are completely disjointed.
+
+How ever if you constructed a pipeline where there was a split in the flow, and you put a UDF in the shared porion, 
+you would find that it was involed more often than you expected.
+--------------------------------------------------------------------------------------------|
+PG - 61
+Using different Join Implementations: 
+-------------------------------------
+PIG offers multiple Join Implementations:
+Pigs lets the user indicate his choice via a USING clause.(pigs are domestic animals).
+
+Joining Small to Large data: pg - 62
+-------------------------------------
+      
+
+
+
+
+
+
+
 
 
