@@ -133,7 +133,271 @@ Pigs lets the user indicate his choice via a USING clause.(pigs are domestic ani
 
 Joining Small to Large data: pg - 62
 -------------------------------------
-      
+      e.g joining us zip code (postal code) to state and city it referred to.. there is at most 100000 zip codes in US, and 
+      this translation table easily fits in memory. rather than forcing a reducer phase to sort the big file plus tiny zip 
+      code translation file, we send the zip code file to every machine and load it into memory. and then join this file by
+      streaming through the large file and looking up  each record in the zip code file.
+      This is called FRAGMENT- REPLICATED JOIN, because fragment one file and replicate the other file.
+
+jnd = join daily by (exchange, symbol), divs by (exchange, symbol) using 'replicated';
+
+"using 'replicated' " tells pig to use the fragment-replicate algorithm to execute this join. 
+Because no reduce phase necessary, all of this can be done in the map task.
+
+the second input listed in the join, DIVS is always the input that is loaded into memory. 
+Pig doesnot check beforehand the specified input file fit into memory, if it cannot fit in memory,pig will issue error&fails.
+
+Note that you need more memory for the same file than it is in disk, because each field is stored as java object and this 
+will have overhead - see pg 26.
+
+Fragment-replicate join supports only inner and left outer joins.It cannot do a right outer join because in the map task,
+sees a record in the replicated input that does not match any record in the fragmented input, it has no idea whether it would
+match a record in a diff fragment, so it does not know whether to emit a record. for right or full outer join, use the 
+default join operation.
+
+Fragment-replicate join can be used with more than two tables.In this case,
+all but the first (left-most) table are read into memory
+
+Pig implements the fragment-replicate join by loading the replicated input into Hadoop’s distributed cache.
+The distributed cache is a tool provided by Hadoop that preloads a file onto the local disk of nodes that 
+will be executing the maps or reduces for that job.
+
+This has two important benefits. First, if you have a fragment-replicate join
+that is going to run on 1,000 maps, opening one file in HDFS from 1,000 different
+machines all at once puts a serious strain on the NameNode and the three data nodes
+that contain the block for that file. The distributed cache is built specifically to manage
+these kinds of issues without straining HDFS. Second, if multiple map tasks are located
+on the same physical machine, the files in the distributed cache are shared between
+those instances, thus reducing the number of times the file has to be copied.
+
+Pig runs a map-only MapReduce job to preprocess the file and get it ready for loading
+into the distributed cache. If there is a filter or foreach between the load and join,
+these will be done as part of this initial job so that the file to be stored in the distributed
+cache is as small as possible. The join itself will be done in a second map-only job.
+---------------
+
+JOINING SKEWED DATA -  PG 63
+Most of the data will have significant skew in the no of records per key.
+E.g: when construcing a Map of web with URL as key, you see significant skew for values such as yahoo.com.
+Pig's default join is very sensitive to skew, because all values to a single key are sent to a single reducer. this makes 
+one or two reducers will take much longer than the rest. to deal this pig provides SKEW join.
+
+-------------------
+Skew join first samples one input for the join. in that input it identifies any keys that have so many records that
+skew join estimates it will not be able to fit them all into memory.
+in second MR job it does the join.
+
+For all records
+except those identified in the sample, it does a standard join, collecting records with
+the same key onto the same reducer. Those keys identified as too large are treated
+differently.
+
+Based on how many records were seen for a given key, those records are
+split across the appropriate number of reducers. The number of reducers is chosen
+based on Pig’s estimate of how wide the data must be split such that each reducer can
+fit its split into memory.
+
+users = load 'users' as (name:chararray, city:chararray);
+cinfo = load 'cityinfo' as (city:chararray, population:int);
+jnd = join cinfo by city, users by city using 'skewed';
+
+Assume that the cities in users are distributed such that 20 users live in Barcelona,
+100,000 in New York, and 350 in Portland
+
+Let’s further assume that Pig determined
+that it could fit 75,000 records into memory on each reducer. When this data was
+joined, New York would be identified as a key that needed to be split across reducers.
+During the join phase, all records with keys other than New York would be treated as
+in a default join. Records from users with New York as the key would be split between
+two separate reducers. Records from cityinfo with New York as a key would be duplicated
+and sent to both of those reducers.
+The second input in the join, in this case users, is the one that will be sampled and have
+its keys with a large number of values split across reducers. The first input will have
+records with those values replicated across reducers.
+
+This algorithm addresses skew in only one input. If both inputs have skew, this algorithm
+will still work, but it will be slow. Much of the motivation behind this approach
+was that it guarantees the join will still finish, given time.
+
+Skew join can be done on inner or outer joins. However, it can take only two join inputs.
+Multiway joins must be broken into a series of joins if they need to use skew join.
+
+There is a small
+performance penalty for using skew join, because one of the inputs must be sampled
+first to find any key values with a large number of records. This usually adds about 5%
+to the time it takes to calculate the join. If your data frequently has skew, it might be
+worth it to always use skew join and pay the 5% tax in order to avoid failing or running
+very slowly with the default join and then needing to rerun using skewed join.
+
+Pig looks at the record sizes in the sample and assumes it can use 30% of the
+JVM’s heap to materialize records that will be joined.
+
+You can do that by setting the property pig.skewed
+join.reduce.memusage to a value between 0 and 1. For example, if you wanted it to use
+25% instead of 30%, you could add -Dpig.skewedjoin.reduce.memusage=0.25 to your
+Pig command line or define the value in your properties file.
+
+NOTE - If you
+plan to process the data in a way that depends on all records with the
+same key being in the same part file, you cannot use skew join.
+------------------------------------------------------
+PG -65 : Joining sorted data
+A common database join strategy is to first sort both inputs on the join key and then
+walk through both inputs together, doing the join. This is referred to as a sort-merge
+join.
+
+In MapReduce, because a sort requires a full MapReduce job, as does Pig’s default
+join, this technique is not more efficient than the default. However, if your inputs are
+already sorted on the join key, this approach makes sense. The join can be done in the
+map phase by opening both files and walking through them. Pig refers to this as a merge
+join because it is a sort-merge join, but the sort has already been done:
+
+daily = load 'NYSE_daily_sorted' as (exchange:chararray, symbol:chararray,
+date:chararray, open:float, high:float, low:float,
+close:float, volume:int, adj_close:float);
+divs = load 'NYSE_dividends_sorted' as (exchange:chararray, symbol:chararray,
+date:chararray, dividends:float);
+jnd = join daily by symbol, divs by symbol using 'merge';
+
+
+To execute this join, Pig will first run a MapReduce job that samples the second input,
+NYSE_dividends_sorted. This sample builds an index that tells Pig the value of the join
+keys, symbol in the first record in every input split (usually each HDFS block). Because
+this sample reads only one record per split, it runs very quickly. Pig will then run a
+second MapReduce job that takes the first input, NYSE_daily_sorted, as its input. When
+each map reads the first record in its split of NYSE_daily_sorted, it takes the value of
+symbol and looks it up in the index built by the previous job. It looks for the last entry
+that is less than its value of symbol. It then opens NYSE_dividends_sorted at the corresponding
+block for that entry. For example, if the index contained entries (CA, 1),
+(CHY, 2), (CP, 3), and the first symbol in a given map’s input split of NYSE_daily_sorted
+was CJA, that map would open block 2 of NYSE_dividends_sorted. (Even if CP was
+the first user ID in NYSE_daily_sorted’s split, block 2 of NYSE_dividends_sorted would
+be opened, as there could be records with a key of CP in that block.) Once NYSE_dividends_
+sorted is opened, Pig throws away records until it reaches a record with sym
+bol of CJA. Once it finds a match, it collects all the records with that value into memory
+and then does the join. It then advances the first input, NYSE_daily_sorted. If the key
+is the same, it again does the join. If not, it advances the second input, NYSE_dividends_
+sorted, again until it finds a value greater than or equal to the next value in the
+first input, NYSE_daily_sorted. If the value is greater, it advances the first input and
+continues. Because both inputs are sorted, it never needs to look in the index after the
+initial lookup.
+
+All of this can be done without a reduce phase, and so it is more efficient than a default
+join. This algorithm, which was introduced in version 0.4, currently supports only twoway
+inner joins.
+
+-------------------------------------------------------
+
+COGROUP - PG - 66
+
+cogroup is a generalization of group. Instead of collecting records of one input based on
+a key, it collects records of n inputs based on a key. The result is a record with a key
+and one bag for each input. Each bag contains all records from that input that have the
+given value for the key:
+A = load 'input1' as (id:int, val:float);
+B = load 'input2' as (id:int, val2:int);
+C = cogroup A by id, B by id;
+describe C;
+C: {group: int,A: {id: int,val: float},B: {id: int,val2: int}}
+
+Another way to think of cogroup is as the first half of a join. The keys are collected
+together, but the cross product is not done. In fact, cogroup plus foreach, where each
+bag is flattened, is equivalent to a join—as long as there are no null values in the keys.
+
+cogroup handles null values in the keys similarly to group and unlike join. That is, all
+records with a null value in the key will be collected together.
+cogroup is useful when you want to do join-like things but not a full join. For example,
+Pig Latin does not have a semi-join operator, but you can do a semi-join:
+--semijoin.pig
+daily = load 'NYSE_daily' as (exchange:chararray, symbol:chararray,
+date:chararray, open:float, high:float, low:float,
+close:float, volume:int, adj_close:float);
+divs = load 'NYSE_dividends' as (exchange:chararray, symbol:chararray,
+date:chararray, dividends:float);
+grpd = cogroup daily by (exchange, symbol), divs by (exchange, symbol);
+sjnd = filter grpd by not IsEmpty(divs);
+final = foreach sjnd generate flatten(daily);
+Because cogroup needs to collect records with like keys together, it requires a reduce
+phase.
+----------------------------------------
+UNION - PG - 66
+Sometimes you want to put two data sets together by concatenating them instead of
+joining them. Pig Latin provides union for this purpose.
+
+A = load '/user/me/data/files/input1';
+B = load '/user/someoneelse/info/input2';
+C = union A, B;
+
+NOTE: Unlike union in SQL, Pig does not require that both inputs share the
+same schema. If both do share the same schema, the output of the union
+will have that schema. If one schema can be produced from another by
+a set of implicit casts, the union will have that resulting schema. If neither
+of these conditions hold, the output will have no schema (that is,
+different records will have different fields). This schema comparison
+includes names, so even different field names will result in the output
+having no schema. You can get around this by placing a foreach before
+the union that renames fields.
+
+A = load 'input1' as (x:int, y:float);
+B = load 'input2' as (x:int, y:float);
+C = union A, B;
+describe C;
+C: {x: int,y: float}
+A = load 'input1' as (x:int, y:float);
+B = load 'input2' as (x:int, y:double);
+C = union A, B;
+describe C;
+C: {x: int,y: double}
+A = load 'input1' as (x:int, y:float);
+B = load 'input2' as (x:int, y:chararray);
+C = union A, B;
+describe C;
+Schema for C unknown.
+
+union does not perform a mathematical set union. That is, duplicate records are not
+eliminated. In this manner it is like SQL’s union all. Also, union does not require a
+separate reduce phase.
+
+
+Sometimes your data changes over time. If you have data you collect every month, you
+might add a new column this month. Now you are prevented from using union because
+your schemas do not match. If you want to union this data and force your data into a
+common schema, you can add the keyword onschema to your union statement:
+A = load 'input1' as (w:chararray, x:int, y:float);
+B = load 'input2' as (x:int, y:double, z:chararray);
+C = union onschema A, B;
+describe C;
+C: {w: chararray,x: int,y: double,z: chararray}
+
+union onschema requires that all inputs have schemas. It also requires that a shared
+schema for all inputs can be produced by adding fields and implicit casts. Matching of
+fields is done by name, not position. So, in the preceding example, w:chararray is added
+from input1 and z:chararray is added from input2. Also, a cast from float to double is
+added for input1 so that field y is a double. If a shared schema cannot be produced by
+this method, an error is returned. When the data is read, nulls are inserted for fields
+not present in a given input.
+
+---------------------------------
+CROSS - 
+
+cross takes every record in NYSE_daily and combines it with every record in
+NYSE_dividends:
+--cross.pig
+-- you may want to run this in a cluster, it produces about 3G of data
+daily = load 'NYSE_daily' as (exchange:chararray, symbol:chararray,
+date:chararray, open:float, high:float, low:float,
+close:float, volume:int, adj_close:float);
+divs = load 'NYSE_dividends' as (exchange:chararray, symbol:chararray,
+date:chararray, dividends:float);
+tonsodata = cross daily, divs parallel 10;
+cross tends to produce a lot of data. Given inputs with n and m records respectively,
+cross will produce output with n x m records.
+-------------------------------------
+Integrating Pig with Legacy Code and MapReduce : PG 69
+
+
+
+
 
 
 
