@@ -21,4 +21,27 @@ e.g - Jorge Posada,{(Catcher),(Designated_hitter)},... once this passed through 
 jorge posada,cacher
 jorge posada, designated_hitter
 
-If there is more than one bag and both are f
+If there is more than one bag and both are flattened, this cross product will be done with members of each bag as well as
+other expressions in the generate statement. soRather than getting n rows(n is no of records in bag) we get n*m rows.
+
+Note that The records with the empty bag would be swallowed by FROEACH. reason is pig might have no idea how to fill in nulls
+for the missing fields. also from mathematical perspective , crossong a set S with empty set results in the empty set.
+So use BINCOND to replace empty bags with a constant bag:
+
+PG -58
+noempty = foreach players generate name,
+      ((position is null or IsEmpty(position)) ? {{'unknown')}:position) as position;
+pos = foreach noempty generate name,flatten(position) as position;
+bypos= group pos by position;
+
+Flatten can be applied to a tuple. here it does not produce a cross product, instead it elevates each field in the tuple to
+a top-level field. Empty tuples will remove the entire record.
+
+The flattened fileds will carry the same names along. so as with Join, use Bag's name and :: operator prepended to it.
+As long as the field names are not ambiguous, we no need to use the bagname:: prefix.
+
+similarly, if you flatten a bag or tuple with no schema and donot use 'as' clause , the results coming out of foreach will
+have null schema. this is because pig will not know howmany fields the flatten will result in.
+
+
+
